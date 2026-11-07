@@ -1,29 +1,46 @@
+import pandas as pd
 from pathlib import Path
 
 PROCESSED = Path(__file__).parent / "Data" / "processed"
 
 
 def validar_premerge(clientes, ventas):
-    """Revisa que el merge se pueda hacer. Devuelve True si todo está bien, False si no.
+    # 1. Que exista la columna "id_cliente" en ambos DataFrames
+    if "id_cliente" not in clientes.columns or "id_cliente" not in ventas.columns:
+        print("Falta la columna id_cliente en los datos.")
+        return False
 
-    Revisar:
-    - Que exista la columna "id_cliente" en los dos dataframes.
-    - Que "id_cliente" no esté repetido en clientes.
-    - Que "id_cliente" tenga el mismo tipo en los dos dataframes.
-    - Cuántas ventas no tienen cliente asociado (esto solo se informa, no falla).
-    """
-    # TODO 6: escribir las validaciones y devolver True o False.
+    # 2. Que "id_cliente" no esté repetido en clientes
+    if clientes["id_cliente"].duplicated().any():
+        print("Hay IDs duplicados en clientes.")
+        return False
+
+    # 3. Que tengan el mismo tipo de dato
+    if clientes["id_cliente"].dtype != ventas["id_cliente"].dtype:
+        print("Los tipos de id_cliente no coinciden.")
+        return False
+
+    # 4. Ver cuántas ventas no tienen cliente asociado (informativo)
+    huerfanas = ~ventas["id_cliente"].isin(clientes["id_cliente"])
+    print(f"Ventas sin cliente asociado: {huerfanas.sum()}")
+
     return True
 
 
 def unir(clientes, ventas):
-    """Une ventas con clientes usando "id_cliente" y guarda el resultado en Data/processed/merge.csv.
+    # Validar primero
+    if not validar_premerge(clientes, ventas):
+        return None
 
-    Pistas:
-    - Usar pd.merge(...) o ventas.merge(...).
-    - Usar how="left" para no perder ventas.
-    - Usar validate="m:1" para confirmar que cada venta tiene un solo cliente.
-    - Guardar con df.to_csv(...) en PROCESSED / "merge.csv".
-    """
-    # TODO 7: validar con validar_premerge(), hacer el merge, guardar el CSV y devolver el dataframe.
-    return None
+    # Crear la carpeta procesada si no existe
+    PROCESSED.mkdir(parents=True, exist_ok=True)
+
+    # Hacer el merge tipo left join
+    df_merged = pd.merge(ventas, clientes, on="id_cliente", how="left", validate="m:1")
+
+    # Guardar en archivo CSV
+    ruta_salida = PROCESSED / "merge.csv"
+    df_merged.to_csv(ruta_salida, index=False)
+    print("Merge guardado con éxito en Data/processed/merge.csv")
+
+    return df_merged

@@ -4,6 +4,15 @@ from carga import cargar_datos
 
 _, ventas = cargar_datos()
 
+print("--- SHAPE ---")
+print("Ventas:", ventas.shape)
+
+print("\n--- INFO ---")
+ventas.info()
+
+print("\n--- DESCRIBE DE VENTAS ---")
+print(ventas.describe())
+
 # Indexación: usamos id_venta como índice
 ventas = ventas.set_index("id_venta")
 
